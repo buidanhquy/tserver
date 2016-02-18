@@ -112,7 +112,6 @@ static int tty_sendto(int fd, char *buff, int len, void *data, unsigned int data
     //return write(fd, buff, *len);
 }
 
-#define USERVER_BUFSIZE 512
 int $UPROTO$_unified_server_proc(void *param) {
     int ret;
     unsigned int len;
@@ -233,13 +232,13 @@ int $UPROTO$_unified_server_proc(void *param) {
                         plain[len1] = '\0';
 
                         $UPROTO$_parse_request(plain, len1, &request);
-                        userver->on_request_f(userver, &request, caddr_str, newsock);
+                        userver->on_request_f(userver, &request, &caddr, newsock);
                     }
                 }
 #else
                 SHOW_LOG(1, "Received from client: %s\n", buffer);
                 $UPROTO$_parse_request(buffer, ret, &request);
-                userver->on_request_f(userver, &request, caddr_str, newsock);
+                userver->on_request_f(userver, &request, &caddr, newsock);
 #endif
             }
         }

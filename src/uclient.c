@@ -31,7 +31,7 @@ static void open_udp_socket($UPROTO$_client_t *uclient, char *server, int port) 
     saddr->sin_port = pj_htons(port);
     saddr->sin_addr = pj_inet_addr(pj_cstr(&s, server));
     
-    CHECK(__FILE__, pj_sock_connect(uclient->fd, (const pj_sockaddr_t *)saddr, sizeof(pj_sockaddr_in)));
+    CHECK(__FILE__,pj_sock_connect(uclient->fd, (const pj_sockaddr_t *)saddr, sizeof(pj_sockaddr_in)));
 }
 
 static void open_tty($UPROTO$_client_t *uclient, char *path) {
@@ -75,6 +75,7 @@ void $UPROTO$_client_open($UPROTO$_client_t *uclient, char *conn_str, char *(*id
     uclient->id_f = NULL;
     uclient->passphrase_f = NULL;
 #endif
+    //uclient->on_response_f = NULL;
     $UPROTO$_client_open_int(uclient, conn_str);
 }
 /*
@@ -219,23 +220,24 @@ int $UPROTO$_client_send_ex($UPROTO$_client_t *uclient, $UPROTO$_request_t *requ
 	return nbytes;
 }
 */
-/*
-int $UPROTO$_client_recv($UPROTO$_client_t *uclient, $UPROTO$_response_t *resp) {
-    int n;
-    unsigned int len;
-    char buffer[UCLIENT_BUFSIZE];
-    struct sockaddr_in from_addr;
+void $UPROTO$_client_recv($UPROTO$_client_t *uclient) {
+    char buff[UCLIENT_BUFSIZE];
+    long nbytes = UCLIENT_BUFSIZE;
+    $UPROTO$_request_t req;
+ 
+    int len = sizeof(pj_sockaddr_in);
+  
+    pj_sock_recvfrom(uclient->fd, (void *)buff, &nbytes, 0, (pj_sockaddr_t *)uclient->connect_data, &len);
+    printf("buf: %s\n", buff);
 
-    len = sizeof(from_addr);
-    memset(&from_addr, '\0', len);
-    n = recvfrom(uclient->fd, buffer, UCLIENT_BUFSIZE, 0, (struct sockaddr *)&from_addr, &len);
-    if( n > 0) {
-        uclient->parse_response_f(buffer, n, resp);
+    $UPROTO$_parse_request(buff, sizeof(buff), &req);
+
+#if 1
+    if (uclient->on_response_f != NULL) {   
+        uclient->on_response_f(uclient, &req);
     }
-
-    return n;
+#endif
 }
-*/
 void $UPROTO$_client_close($UPROTO$_client_t *uclient){
     pj_sock_close(uclient->fd);
     free(uclient->connect_data);
